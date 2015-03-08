@@ -22,7 +22,7 @@ double residual(const double *u, const double *f, long int n)
 	return sqrt(rss);
 }
 
-void jacobi(double *u, const double *f, long int n)
+void jacobi(double *u, const double *f, long int n, int length)
 {
 	if (n == 1)
 	{
@@ -31,13 +31,13 @@ void jacobi(double *u, const double *f, long int n)
 	}
 	double u_old = 0;
 	long int i;
-	for (i = 0; i < n-1; i++)
+	for (i = 0; i < length-1; i++)
 	{
 		double tmp = f[i]/(2*(n+1)*(n+1))+0.5*u_old+0.5*u[i+1];
 		u_old = u[i];
 		u[i] = tmp;
 	}
-	u[n-1] = f[i]/(2*(n+1)*(n+1))+0.5*u_old;
+	u[length-1] = f[i]/(2*(n+1)*(n+1))+0.5*u_old;
 	return;
 }
 
@@ -97,7 +97,7 @@ int main (int argc, char **argv)
 	
 	for (i = 0; i < k; i++)
 	{
-		jacobi(u, f, length);
+		jacobi(u, f, n, length);
 
 		if (rank == 0)
 		{
@@ -121,6 +121,46 @@ int main (int argc, char **argv)
 
 	}
 	
+	tag = 199;
+	/*
+   	 * Write output to a file
+	*/
+	if (rank == 0)
+	{
+	  FILE* fd = NULL;
+	  char filename[256];
+	  snprintf(filename, 256, "vec%ldloop%ldnp%d.txt", n, k, size);
+	  fd = fopen(filename,"w+");
+	  
+	  if(NULL == fd)
+	  {
+	    printf("Error opening file \n");
+	    return 1;
+	  }
+
+	  for(i = 1; i < length-1; i++)
+	    fprintf(fd, "%f\n", u[i]);
+
+	  int j;
+	  for(j = 1; j < size; j++)
+	  {
+	    int p=1;
+	    MPI_Send(&p, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
+	    MPI_Recv(u, length, MPI_DOUBLE, j, tag, MPI_COMM_WORLD, &status);
+	    for(i = 1; i < length-1; i++)
+	      fprintf(fd, "%f\n", u[i]);
+	  }
+	  
+	  
+	  fclose(fd);
+	}
+	else
+	{
+	  int p;
+	  MPI_Recv(&p, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
+	  MPI_Send(u, length, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
+	}
+
 	free(u);
 	free(f);
 
