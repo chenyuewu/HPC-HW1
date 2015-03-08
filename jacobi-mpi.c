@@ -153,6 +153,7 @@ int main (int argc, char **argv)
 	  
 	  
 	  fclose(fd);
+          printf("Results saved in %s.\n",filename);
 	}
 	else
 	{
