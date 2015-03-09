@@ -1,6 +1,6 @@
 EXECUTABLE = int_ring jacobi-mpi
 COMPILER = mpicc
-FLAG = -lrt -O3 -Wall
+FLAG = -lrt -O3 -Wall -lm
 
 all: $(EXECUTABLE)
 
